@@ -156,12 +156,12 @@ def analyze_submissions(submissions):
     now = datetime.now(datetime.fromisoformat(submissions[0]['at'].replace('Z', '+00:00')).tzinfo)
     latest_task = sorted_task_names[-1] if sorted_task_names else None
 
-    # Check if task7 was fully completed (has the completion message)
+    # Check if task7 was fully completed (doesn't have failure message)
     task7_completed = False
     if latest_task == 'task7' and 'task7' in task_data:
-        completion_text = "[REDACTED]"
+        fail_text = "It didn't work."
         for sub in task_data['task7']['submissions']:
-            if 'message' in sub and completion_text in sub.get('message', ''):
+            if 'message' in sub and fail_text not in sub.get('message', ''):
                 task7_completed = True
                 break
 
