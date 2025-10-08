@@ -171,28 +171,13 @@ def analyze_submissions(submissions):
         is_latest_task = (task == latest_task)
 
         if data['first_at'] and data['last_at']:
-            # Special case: task7 is fully completed
-            if task == 'task7' and task7_completed:
-                # Single submission: time from task 6 completion
-                if data['first_at'] == data['last_at'] and i > 0:
-                    prev_task = sorted_task_names[i - 1]
-                    prev_last = task_data[prev_task]['last_at']
-                    if prev_last:
-                        time_diff = data['last_at'] - prev_last
-                        data['time_spent_hours'] = round(time_diff.total_seconds() / 3600, 2)
-                    else:
-                        data['time_spent_hours'] = 0
-                # Multiple submissions: time between first and last task 7 submission
-                else:
-                    time_diff = data['last_at'] - data['first_at']
-                    data['time_spent_hours'] = round(time_diff.total_seconds() / 3600, 2)
-            # For the latest task, always calculate to now (tracks ongoing work)
-            elif is_latest_task:
+            # For the latest task (not completed), calculate to now (tracks ongoing work)
+            if is_latest_task and not (task == 'task7' and task7_completed):
                 time_diff = now - data['first_at']
                 data['time_spent_hours'] = round(time_diff.total_seconds() / 3600, 2)
-            # If first and last are the same (single attempt on earlier task)
-            elif data['first_at'] == data['last_at']:
-                # Look back to previous task
+            # For completed tasks (including task7 if fully completed)
+            else:
+                # Calculate from previous task completion to this task completion
                 if i > 0:
                     prev_task = sorted_task_names[i - 1]
                     prev_last = task_data[prev_task]['last_at']
@@ -202,11 +187,9 @@ def analyze_submissions(submissions):
                     else:
                         data['time_spent_hours'] = 0
                 else:
-                    data['time_spent_hours'] = 0
-            else:
-                # Normal case: time between first and last submission of earlier task
-                time_diff = data['last_at'] - data['first_at']
-                data['time_spent_hours'] = round(time_diff.total_seconds() / 3600, 2)
+                    # First task: use time between first and last submission
+                    time_diff = data['last_at'] - data['first_at']
+                    data['time_spent_hours'] = round(time_diff.total_seconds() / 3600, 2)
 
     return dict(task_data)
 
