@@ -19,38 +19,52 @@ DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
 
 # Task configurations for each year
+# Format: (board_x, board_y, "Board Name")
+# 2021 and earlier: Board 2/Y = Individual task Y (2/0 = Task 0, 2/1 = Task 1, etc.)
+# 2022 and later: Board 3+ = Individual tasks (3/0 = Task 0, 4/0 = Task 1, etc.)
 YEAR_TASK_CONFIGS = {
     2018: [
-        (0, 0, "Main Leaderboard"),
         (1, 0, "Participants"),
+        (2, 0, "Task 0"), (2, 1, "Task 1"), (2, 2, "Task 2"), (2, 3, "Task 3"),
+        (2, 4, "Task 4"), (2, 5, "Task 5"), (2, 6, "Task 6"), (2, 7, "Task 7"),
     ],
     2019: [
-        (0, 0, "Main Leaderboard"),
         (1, 0, "Participants"),
+        (2, 0, "Task 1"), (2, 1, "Task 2"), (2, 2, "Task 3"), (2, 3, "Task 4"),
+        (2, 4, "Task 5"), (2, 5, "Task 6a"), (2, 6, "Task 6b"), (2, 7, "Task 7"),
     ],
     2020: [
-        (0, 0, "Main Leaderboard"),
         (1, 0, "Participants"),
+        (2, 0, "Task 1"), (2, 1, "Task 2"), (2, 2, "Task 3"), (2, 3, "Task 4"),
+        (2, 4, "Task 5"), (2, 5, "Task 6"), (2, 6, "Task 7"), (2, 7, "Task 8"), (2, 8, "Task 9"),
     ],
     2021: [
-        (0, 0, "Main Leaderboard"),
         (1, 0, "Participants"),
+        (2, 0, "Task 0"), (2, 1, "Task 1"), (2, 2, "Task 2"), (2, 3, "Task 3"),
+        (2, 4, "Task 4"), (2, 5, "Task 5"), (2, 6, "Task 6"), (2, 7, "Task 7"),
+        (2, 8, "Task 8"), (2, 9, "Task 9"), (2, 10, "Task 10"),
     ],
     2022: [
-        (0, 0, "Main Leaderboard"),
         (1, 0, "Participants"),
+        (3, 0, "Task 0"), (4, 0, "Task a1"), (5, 0, "Task a2"), (6, 0, "Task b1"),
+        (7, 0, "Task b2"), (8, 0, "Task 5"), (9, 0, "Task 6"), (10, 0, "Task 7"),
+        (11, 0, "Task 8"), (12, 0, "Task 9"),
     ],
     2023: [
-        (0, 0, "Main Leaderboard"),
         (1, 0, "Participants"),
+        (3, 0, "Task 0"), (4, 0, "Task 1"), (5, 0, "Task 2"), (6, 0, "Task 3"),
+        (7, 0, "Task 4"), (8, 0, "Task 5"), (9, 0, "Task 6"), (10, 0, "Task 7"),
+        (11, 0, "Task 8"), (12, 0, "Task 9"),
     ],
     2024: [
-        (0, 0, "Main Leaderboard"),
         (1, 0, "Participants"),
+        (3, 0, "Task 0"), (4, 0, "Task 1"), (5, 0, "Task 2"), (6, 0, "Task 3"),
+        (7, 0, "Task 4"), (8, 0, "Task 5"), (9, 0, "Task 6"), (10, 0, "Task 7"),
     ],
     2025: [  # Current year
-        (0, 0, "Main Leaderboard"),
         (1, 0, "Participants"),
+        (3, 0, "Task 0"), (4, 0, "Task 1"), (5, 0, "Task 2"), (6, 0, "Task 3"),
+        (7, 0, "Task 4"), (8, 0, "Task 5"), (9, 0, "Task 6"), (10, 0, "Task 7"),
     ],
 }
 
@@ -189,134 +203,61 @@ def analyze_participants(participants_data):
         "by_school": school_data
     }
 
-def analyze_task_solves(main_leaderboard_data, year=2025):
-    """Analyze task solve data from main leaderboard table"""
+def analyze_task_solves_from_individual_boards(scraped_data, year=2025):
+    """Analyze task solve data from individual task boards
+
+    Column structure by year:
+    2022-2025: [School, Solvers, Scorers, First Solution]
+    2018-2021: [University, Players, Solvers, First Solution]
+    """
     task_stats = {}
 
-    # Different years have different structures
-    if year == 2025:
-        # 2025 structure: [Division, Rank, School, Score, then 6 columns per task × 8 tasks]
-        # Each task has 6 columns: [passed#, reached#, pass%, points, pts4reach, pts4pass]
-        task_names = ["Task 0", "Task 1", "Task 2", "Task 3", "Task 4", "Task 5", "Task 6", "Task 7"]
-
-        # Initialize task stats
-        for task_name in task_names:
-            task_stats[task_name] = {"total_solvers": 0, "schools": []}
-
-        # Process each school's data
-        for row in main_leaderboard_data:
-            if len(row) >= 52:  # Need at least 52 columns (4 + 8*6)
-                school_name = row[2]  # School is column 2
-
-                # Process each task
-                for task_idx, task_name in enumerate(task_names):
-                    # Each task has 6 columns, "passed#" is the first column of each task group
-                    col_idx = 4 + (task_idx * 6)
-                    try:
-                        if isinstance(row[col_idx], str):
-                            solve_count = int(row[col_idx].replace(',', ''))
-                        else:
-                            solve_count = int(row[col_idx])
-                        if solve_count > 0:
-                            task_stats[task_name]["total_solvers"] += solve_count
-                            task_stats[task_name]["schools"].append({
-                                'school': school_name,
-                                'solvers': solve_count
-                            })
-                    except (ValueError, IndexError, TypeError):
-                        continue
+    # Determine which column has "Solvers" based on year
+    if year >= 2022:
+        # 2022-2025: Solvers is column 1
+        solvers_col = 1
+        school_col = 0
     else:
-        # Historical years: varying structures
-        # Years 2018-2020: [School, Tasks..., Score]
-        # Years 2021-2024: [Rank, School, Tasks..., Score]
+        # 2018-2021: Solvers is column 2
+        solvers_col = 2
+        school_col = 0
 
-        # Define task names, column indices, and school column for each year
-        if year == 2018:
-            # [School, Task0-7, Score] - 10 columns
-            school_col = 0
-            task_configs = [
-                (1, "Task 0"), (2, "Task 1"), (3, "Task 2"), (4, "Task 3"),
-                (5, "Task 4"), (6, "Task 5"), (7, "Task 6"), (8, "Task 7")
-            ]
-        elif year == 2019:
-            # [School, Task1-7/6a/6b, Score] - 10 columns
-            school_col = 0
-            task_configs = [
-                (1, "Task 1"), (2, "Task 2"), (3, "Task 3"), (4, "Task 4"),
-                (5, "Task 5"), (6, "Task 6a"), (7, "Task 6b"), (8, "Task 7")
-            ]
-        elif year == 2020:
-            # [School, Task1-9, Score] - 11 columns
-            school_col = 0
-            task_configs = [
-                (1, "Task 1"), (2, "Task 2"), (3, "Task 3"), (4, "Task 4"),
-                (5, "Task 5"), (6, "Task 6"), (7, "Task 7"), (8, "Task 8"), (9, "Task 9")
-            ]
-        elif year == 2021:
-            # [Rank, School, Task0-10, Score] - 14 columns
-            school_col = 1
-            task_configs = [
-                (2, "Task 0"), (3, "Task 1"), (4, "Task 2"), (5, "Task 3"),
-                (6, "Task 4"), (7, "Task 5"), (8, "Task 6"), (9, "Task 7"),
-                (10, "Task 8"), (11, "Task 9"), (12, "Task 10")
-            ]
-        elif year == 2022:
-            # [Rank, School, Task0/a1/a2/b1/b2/5-9, Score] - 13 columns
-            school_col = 1
-            task_configs = [
-                (2, "Task 0"), (3, "Task a1"), (4, "Task a2"), (5, "Task b1"),
-                (6, "Task b2"), (7, "Task 5"), (8, "Task 6"), (9, "Task 7"),
-                (10, "Task 8"), (11, "Task 9")
-            ]
-        elif year == 2023:
-            # [Rank, School, Task0-9, Score] - 13 columns
-            school_col = 1
-            task_configs = [
-                (2, "Task 0"), (3, "Task 1"), (4, "Task 2"), (5, "Task 3"),
-                (6, "Task 4"), (7, "Task 5"), (8, "Task 6"), (9, "Task 7"),
-                (10, "Task 8"), (11, "Task 9")
-            ]
-        elif year == 2024:
-            # [Rank, School, Total, Task0-7, Score] - 12 columns (actually 11 in data)
-            school_col = 1
-            task_configs = [
-                (2, "Task 0"), (3, "Task 1"), (4, "Task 2"), (5, "Task 3"),
-                (6, "Task 4"), (7, "Task 5"), (8, "Task 6"), (9, "Task 7")
-            ]
-        else:
-            # Default fallback
-            school_col = 1
-            task_configs = []
+    # Process each task board
+    for board_name, board_data in scraped_data.items():
+        # Skip the Participants board
+        if board_name == "Participants" or not board_name.startswith("Task"):
+            continue
 
-        # Initialize task stats
-        for col_idx, task_name in task_configs:
-            task_stats[task_name] = {"total_solvers": 0, "schools": []}
+        total_solvers = 0
+        schools = []
 
-        # Process each school's data
-        for row in main_leaderboard_data:
-            if len(row) < 3:
+        for row in board_data:
+            if len(row) <= solvers_col:
                 continue
 
-            school_name = row[school_col]
+            try:
+                # Get solvers from appropriate column
+                solvers_value = row[solvers_col]
 
-            for col_idx, task_name in task_configs:
-                try:
-                    if len(row) <= col_idx:
-                        continue
+                if isinstance(solvers_value, str):
+                    solvers = int(solvers_value.replace(',', ''))
+                else:
+                    solvers = int(solvers_value)
 
-                    if isinstance(row[col_idx], str):
-                        solve_count = int(row[col_idx].replace(',', ''))
-                    else:
-                        solve_count = int(row[col_idx])
+                if solvers > 0:
+                    total_solvers += solvers
+                    school_name = row[school_col] if len(row) > school_col else "Unknown"
+                    schools.append({
+                        'school': school_name,
+                        'solvers': solvers
+                    })
+            except (ValueError, TypeError, IndexError):
+                continue
 
-                    if solve_count > 0:
-                        task_stats[task_name]["total_solvers"] += solve_count
-                        task_stats[task_name]["schools"].append({
-                            'school': school_name,
-                            'solvers': solve_count
-                        })
-                except (ValueError, IndexError, TypeError):
-                    continue
+        task_stats[board_name] = {
+            "total_solvers": total_solvers,
+            "schools": schools
+        }
 
     return task_stats
 
@@ -560,9 +501,8 @@ def main():
                     total_participants = participants_analysis['total_participants']
                     total_schools = len(participants_analysis['by_school'])
 
-                    # Analyze task solves from main leaderboard data
-                    main_leaderboard_data = scraped_data.get("Main Leaderboard", [])
-                    task_stats = analyze_task_solves(main_leaderboard_data, year_label)
+                    # Analyze task solves from individual task boards
+                    task_stats = analyze_task_solves_from_individual_boards(scraped_data, year_label)
 
                     # Calculate solve rates
                     solve_rates = calculate_solve_rates(total_participants, task_stats)

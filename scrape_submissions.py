@@ -156,13 +156,32 @@ def analyze_submissions(submissions):
     now = datetime.now(datetime.fromisoformat(submissions[0]['at'].replace('Z', '+00:00')).tzinfo)
     latest_task = sorted_task_names[-1] if sorted_task_names else None
 
+    # Check if task7 was fully completed (has the completion message)
+    task7_completed = False
+    if latest_task == 'task7' and 'task7' in task_data:
+        completion_text = "[REDACTED]"
+        for sub in task_data['task7']['submissions']:
+            if 'message' in sub and completion_text in sub.get('message', ''):
+                task7_completed = True
+                break
+
     for i, task in enumerate(sorted_task_names):
         data = task_data[task]
         is_latest_task = (task == latest_task)
 
         if data['first_at'] and data['last_at']:
+            # Special case: task7 is fully completed
+            if task == 'task7' and task7_completed and i > 0:
+                prev_task = sorted_task_names[i - 1]
+                prev_last = task_data[prev_task]['last_at']
+                if prev_last:
+                    time_diff = data['last_at'] - prev_last
+                    data['time_spent_hours'] = round(time_diff.total_seconds() / 3600, 2)
+                else:
+                    time_diff = data['last_at'] - data['first_at']
+                    data['time_spent_hours'] = round(time_diff.total_seconds() / 3600, 2)
             # For the latest task, always calculate to now (tracks ongoing work)
-            if is_latest_task:
+            elif is_latest_task:
                 time_diff = now - data['first_at']
                 data['time_spent_hours'] = round(time_diff.total_seconds() / 3600, 2)
             # If first and last are the same (single attempt on earlier task)
