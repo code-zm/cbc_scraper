@@ -309,8 +309,6 @@ def task_sort_key(task_name):
     # "a1" -> (0, 'a', 1) - special case for 2022, comes after Task 0
     # "b2" -> (0, 'b', 2) - special case for 2022
 
-    import re
-
     # Try to match patterns
     if task_part.isdigit():
         # Simple number: "5"
