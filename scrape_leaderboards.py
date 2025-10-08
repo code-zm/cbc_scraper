@@ -31,11 +31,18 @@ YEAR_TASKS = {
     2025: ["Task 0", "Task 1", "Task 2", "Task 3", "Task 4", "Task 5", "Task 6", "Task 7"],
 }
 
-# Board format: Pre-2022 uses board 2/Y, Post-2022 uses board 3+
-# Pre-2022: Board 2/Y (2/0 = first task, 2/1 = second task, etc.)
+# Board format: Different API endpoint coordinates for different years
+# The NSA Codebreaker API uses /data/board/{x}/{y} or /data/histboard/{year}/{x}/{y}
+# where x and y are coordinates that changed between years:
+#
+# Pre-2022 format: Board 2/Y
+#   - Participants: board 1/0
+#   - Tasks: board 2/0, 2/1, 2/2, ... (2/Y where Y increments per task)
+#
+# Post-2022 format: Board 3+
+#   - Participants: board 1/0
+#   - Tasks: board 3/0, 4/0, 5/0, ... (X/0 where X increments per task)
 PRE_2022_BOARD_FORMAT = lambda tasks: [(1, 0, "Participants")] + [(2, i, name) for i, name in enumerate(tasks)]
-
-# Post-2022: Board 3+ (3/0 = first task, 4/0 = second task, etc.)
 POST_2022_BOARD_FORMAT = lambda tasks: [(1, 0, "Participants")] + [(3 + i, 0, name) for i, name in enumerate(tasks)]
 
 # Generate configs
@@ -506,37 +513,7 @@ def main():
 
         # Display results for all requested years
         for year in years_to_display:
-            year_label = year if year else 2025
-            year_key = str(year_label)
-
-            # Load results from appropriate location
-            if year is None:
-                filepath = DATA_DIR / args.file
-                try:
-                    with open(filepath, 'r') as f:
-                        results = json.load(f)
-                except FileNotFoundError:
-                    console.print(f"[red]Could not load data for {year_label}[/red]")
-                    continue
-            else:
-                if year_key in archive:
-                    results = archive[year_key]
-                else:
-                    console.print(f"[red]Could not load data for {year_label}[/red]")
-                    continue
-
-            # Extract data
-            participants_analysis = results.get('participants_analysis', {})
-            total_participants = participants_analysis.get('total_participants', 0)
-            total_schools = len(participants_analysis.get('by_school', []))
-            solve_rates = results.get('solve_rates', {})
-
-            # Display results with rich
-            console.print()
-            display_summary(total_participants, total_schools, year_label)
-            console.print()
-            display_solve_rates(solve_rates)
-
+            load_and_display(args.file, year)
             if len(years_to_display) > 1 and year != years_to_display[-1]:
                 console.print("\n" + "="*80 + "\n")
 
