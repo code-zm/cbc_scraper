@@ -18,55 +18,32 @@ console = Console()
 DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
 
-# Task configurations for each year
-# Format: (board_x, board_y, "Board Name")
-# 2021 and earlier: Board 2/Y = Individual task Y (2/0 = Task 0, 2/1 = Task 1, etc.)
-# 2022 and later: Board 3+ = Individual tasks (3/0 = Task 0, 4/0 = Task 1, etc.)
-YEAR_TASK_CONFIGS = {
-    2018: [
-        (1, 0, "Participants"),
-        (2, 0, "Task 0"), (2, 1, "Task 1"), (2, 2, "Task 2"), (2, 3, "Task 3"),
-        (2, 4, "Task 4"), (2, 5, "Task 5"), (2, 6, "Task 6"), (2, 7, "Task 7"),
-    ],
-    2019: [
-        (1, 0, "Participants"),
-        (2, 0, "Task 1"), (2, 1, "Task 2"), (2, 2, "Task 3"), (2, 3, "Task 4"),
-        (2, 4, "Task 5"), (2, 5, "Task 6a"), (2, 6, "Task 6b"), (2, 7, "Task 7"),
-    ],
-    2020: [
-        (1, 0, "Participants"),
-        (2, 0, "Task 1"), (2, 1, "Task 2"), (2, 2, "Task 3"), (2, 3, "Task 4"),
-        (2, 4, "Task 5"), (2, 5, "Task 6"), (2, 6, "Task 7"), (2, 7, "Task 8"), (2, 8, "Task 9"),
-    ],
-    2021: [
-        (1, 0, "Participants"),
-        (2, 0, "Task 0"), (2, 1, "Task 1"), (2, 2, "Task 2"), (2, 3, "Task 3"),
-        (2, 4, "Task 4"), (2, 5, "Task 5"), (2, 6, "Task 6"), (2, 7, "Task 7"),
-        (2, 8, "Task 8"), (2, 9, "Task 9"), (2, 10, "Task 10"),
-    ],
-    2022: [
-        (1, 0, "Participants"),
-        (3, 0, "Task 0"), (4, 0, "Task a1"), (5, 0, "Task a2"), (6, 0, "Task b1"),
-        (7, 0, "Task b2"), (8, 0, "Task 5"), (9, 0, "Task 6"), (10, 0, "Task 7"),
-        (11, 0, "Task 8"), (12, 0, "Task 9"),
-    ],
-    2023: [
-        (1, 0, "Participants"),
-        (3, 0, "Task 0"), (4, 0, "Task 1"), (5, 0, "Task 2"), (6, 0, "Task 3"),
-        (7, 0, "Task 4"), (8, 0, "Task 5"), (9, 0, "Task 6"), (10, 0, "Task 7"),
-        (11, 0, "Task 8"), (12, 0, "Task 9"),
-    ],
-    2024: [
-        (1, 0, "Participants"),
-        (3, 0, "Task 0"), (4, 0, "Task 1"), (5, 0, "Task 2"), (6, 0, "Task 3"),
-        (7, 0, "Task 4"), (8, 0, "Task 5"), (9, 0, "Task 6"), (10, 0, "Task 7"),
-    ],
-    2025: [  # Current year
-        (1, 0, "Participants"),
-        (3, 0, "Task 0"), (4, 0, "Task 1"), (5, 0, "Task 2"), (6, 0, "Task 3"),
-        (7, 0, "Task 4"), (8, 0, "Task 5"), (9, 0, "Task 6"), (10, 0, "Task 7"),
-    ],
+# Task names for each year
+YEAR_TASKS = {
+    2018: ["Task 0", "Task 1", "Task 2", "Task 3", "Task 4", "Task 5", "Task 6", "Task 7"],
+    2019: ["Task 1", "Task 2", "Task 3", "Task 4", "Task 5", "Task 6a", "Task 6b", "Task 7"],
+    2020: ["Task 1", "Task 2", "Task 3", "Task 4", "Task 5", "Task 6", "Task 7", "Task 8", "Task 9"],
+    2021: ["Task 0", "Task 1", "Task 2", "Task 3", "Task 4", "Task 5", "Task 6", "Task 7", "Task 8", "Task 9", "Task 10"],
+    2022: ["Task 0", "Task a1", "Task a2", "Task b1", "Task b2", "Task 5", "Task 6", "Task 7", "Task 8", "Task 9"],
+    2023: ["Task 0", "Task 1", "Task 2", "Task 3", "Task 4", "Task 5", "Task 6", "Task 7", "Task 8", "Task 9"],
+    2024: ["Task 0", "Task 1", "Task 2", "Task 3", "Task 4", "Task 5", "Task 6", "Task 7"],
+    2025: ["Task 0", "Task 1", "Task 2", "Task 3", "Task 4", "Task 5", "Task 6", "Task 7"],
 }
+
+# Board format: Pre-2022 uses board 2/Y, Post-2022 uses board 3+
+# Pre-2022: Board 2/Y (2/0 = first task, 2/1 = second task, etc.)
+PRE_2022_BOARD_FORMAT = lambda tasks: [(1, 0, "Participants")] + [(2, i, name) for i, name in enumerate(tasks)]
+
+# Post-2022: Board 3+ (3/0 = first task, 4/0 = second task, etc.)
+POST_2022_BOARD_FORMAT = lambda tasks: [(1, 0, "Participants")] + [(3 + i, 0, name) for i, name in enumerate(tasks)]
+
+# Generate configs
+YEAR_TASK_CONFIGS = {}
+for year, tasks in YEAR_TASKS.items():
+    if year <= 2021:
+        YEAR_TASK_CONFIGS[year] = PRE_2022_BOARD_FORMAT(tasks)
+    else:
+        YEAR_TASK_CONFIGS[year] = POST_2022_BOARD_FORMAT(tasks)
 
 def get_tokens():
     """Get session cookie and CSRF token from leaderboard page"""
