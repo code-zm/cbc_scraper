@@ -171,12 +171,17 @@ def analyze_submissions(submissions):
 
         if data['first_at'] and data['last_at']:
             # Special case: task7 is fully completed
-            if task == 'task7' and task7_completed and i > 0:
-                prev_task = sorted_task_names[i - 1]
-                prev_last = task_data[prev_task]['last_at']
-                if prev_last:
-                    time_diff = data['last_at'] - prev_last
-                    data['time_spent_hours'] = round(time_diff.total_seconds() / 3600, 2)
+            if task == 'task7' and task7_completed:
+                # Single submission: time from task 6 completion
+                if data['first_at'] == data['last_at'] and i > 0:
+                    prev_task = sorted_task_names[i - 1]
+                    prev_last = task_data[prev_task]['last_at']
+                    if prev_last:
+                        time_diff = data['last_at'] - prev_last
+                        data['time_spent_hours'] = round(time_diff.total_seconds() / 3600, 2)
+                    else:
+                        data['time_spent_hours'] = 0
+                # Multiple submissions: time between first and last task 7 submission
                 else:
                     time_diff = data['last_at'] - data['first_at']
                     data['time_spent_hours'] = round(time_diff.total_seconds() / 3600, 2)
