@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+# Authors: code-zm, cl0d
+# Date: 10/08/2025
 
 import json
 import os
