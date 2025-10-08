@@ -317,7 +317,11 @@ def main():
     console.print("[bold cyan]Starting NSA Codebreaker submissions scraper...[/bold cyan]\n")
 
     # Log in and get session
-    session = login()
+    try:
+        session = login()
+    except ValueError as e:
+        console.print(f"[red]Login failed: Incorrect credentials[/red]")
+        return
 
     # Scrape all submissions
     console.print()
