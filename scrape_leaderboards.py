@@ -346,7 +346,7 @@ def display_solve_rates(solve_rates):
     total_participants = next(iter(solve_rates.values()))['total_participants'] if solve_rates else 0
 
     table = Table(
-        title=f"Task Solve Rates (Total Participants: {total_participants:,})",
+        title=f"Task Solve Rates\n(Total Participants: {total_participants:,})",
         show_header=True,
         header_style="bold magenta"
     )
