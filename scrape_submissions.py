@@ -173,10 +173,11 @@ def analyze_submissions(submissions):
     task7_completed = False
     if latest_task == 'task7' and 'task7' in task_data:
         fail_text = "It didn't work."
-        for sub in task_data['task7']['submissions']:
-            if 'message' in sub and fail_text not in sub.get('message', ''):
-                task7_completed = True
-                break
+        # Sort submissions by timestamp to get the latest one
+        latest_sub = max(task_data['task7']['submissions'],
+                        key=lambda s: datetime.fromisoformat(s['at'].replace('Z', '+00:00')))
+        if 'message' in latest_sub and fail_text not in latest_sub.get('message', ''):
+            task7_completed = True
 
     for i, task in enumerate(sorted_task_names):
         data = task_data[task]
