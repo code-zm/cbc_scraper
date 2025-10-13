@@ -19,6 +19,7 @@ import argparse
 import math
 import re
 import getpass
+import hashlib
 from pathlib import Path
 from datetime import datetime
 from collections import defaultdict
@@ -33,6 +34,43 @@ console = Console()
 # Create data directory
 DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
+
+# Success message hashes for tasks 0-6
+# Generated from submission_success.txt - these are SHA256 hashes
+SUCCESS_HASHES = {
+    'task0': '4210a265099e340d98e4b3d04e883245cde32999133c83f3af2931dcc5c440c3',
+    'task1': '7e08cced5248f6d7f49d15ab6d410c1acf0aac1a04d5c1345e558b0ed0e86c42',
+    'task2': '6f6ea131f6c4a001614adb60fe208e54b1da6dcd4aeef850cf4645dcc3ad0832',
+    'task3': '537f4e3753b644d6d682dd43176841d957f970452a65897f72e486a17df3971d',
+    'task4': 'c3a7e5b47da78cf8b07b6364f1a79fab02c1d5a6d35f36e04659a2157681af33',
+    'task5': '6fa5737d513388d1e067927248ee33f0bef6f5909e3c56d72a0f1054e0a88f24',
+    'task6': 'cac8981e08fe56e8b30807e24d5d08d0fab3beea9ef8538e42f036ced3e5052e',
+}
+
+def check_task_passed(task_name, submissions):
+    """Check if a task was passed by looking at response message hashes.
+
+    For tasks 0-6: Check if any submission has a response message hash matching the success hash
+    For task 7: Check if the latest submission doesn't contain the failure message
+    """
+    if task_name == 'task7':
+        # Task 7 uses the old method (check for failure message)
+        fail_text = "It didn't work."
+        latest_sub = max(submissions, key=lambda s: datetime.fromisoformat(s['at'].replace('Z', '+00:00')))
+        return 'message' in latest_sub and fail_text not in latest_sub.get('message', '')
+
+    # For tasks 0-6, check if any submission has the success message hash
+    if task_name not in SUCCESS_HASHES:
+        return False
+
+    success_hash = SUCCESS_HASHES[task_name]
+    for sub in submissions:
+        if 'message' in sub and sub['message']:
+            msg_hash = hashlib.sha256(sub['message'].encode()).hexdigest()
+            if msg_hash == success_hash:
+                return True
+
+    return False
 
 def login():
     """Log in to NSA Codebreaker using environment variables or prompts"""
@@ -169,26 +207,41 @@ def analyze_submissions(submissions):
     now = datetime.now(datetime.fromisoformat(submissions[0]['at'].replace('Z', '+00:00')).tzinfo)
     latest_task = sorted_task_names[-1] if sorted_task_names else None
 
-    # Check if task7 was fully completed (doesn't have failure message)
-    task7_completed = False
-    if latest_task == 'task7' and 'task7' in task_data:
-        fail_text = "It didn't work."
-        # Sort submissions by timestamp to get the latest one
-        latest_sub = max(task_data['task7']['submissions'],
-                        key=lambda s: datetime.fromisoformat(s['at'].replace('Z', '+00:00')))
-        if 'message' in latest_sub and fail_text not in latest_sub.get('message', ''):
-            task7_completed = True
+    # Check which tasks were passed using response message hashes
+    task_passed = {}
+    for task in sorted_task_names:
+        task_passed[task] = check_task_passed(task, task_data[task]['submissions'])
+
+    # If the latest task with submissions was passed, add the next task (even if no submissions yet)
+    if latest_task and task_passed.get(latest_task, False):
+        latest_task_num = int(latest_task.replace('task', ''))
+        if latest_task_num < 7:  # Only if not already on task 7
+            next_task = f'task{latest_task_num + 1}'
+            if next_task not in task_data:
+                # Add placeholder for the next task they're working on
+                task_data[next_task] = {
+                    'submissions': [],
+                    'count': 0,
+                    'first_at': task_data[latest_task]['last_at'],  # Start from when they passed previous task
+                    'last_at': task_data[latest_task]['last_at'],
+                    'time_spent_hours': 0
+                }
+                sorted_task_names.append(next_task)
+                sorted_task_names.sort(key=lambda x: int(x.replace('task', '')))
+                task_passed[next_task] = False
+                latest_task = next_task
 
     for i, task in enumerate(sorted_task_names):
         data = task_data[task]
         is_latest_task = (task == latest_task)
+        passed = task_passed[task]
 
         if data['first_at'] and data['last_at']:
-            # For the latest task (not completed), calculate to now (tracks ongoing work)
-            if is_latest_task and not (task == 'task7' and task7_completed):
+            # For the latest task that hasn't been passed yet, calculate to now (tracks ongoing work)
+            if is_latest_task and not passed:
                 time_diff = now - data['first_at']
                 data['time_spent_hours'] = round(time_diff.total_seconds() / 3600, 2)
-            # For completed tasks (including task7 if fully completed)
+            # For passed tasks
             else:
                 # Calculate from previous task completion to this task completion
                 if i > 0:
