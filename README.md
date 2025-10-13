@@ -56,7 +56,11 @@ export CBC_PASSWORD="your_password"
 - Tracks progress on current task
 
 **Time Calculation:**
-- Latest task (any attempts): `now - first_submission` (tracks ongoing work)
-- Earlier tasks (multiple attempts): `last_submission - first_submission`
-- Earlier tasks (single attempt): `submission_time - previous_task_last_submission`
+- **Pass/Fail Detection:**
+  - Tasks 0-6: Compares response message hash against known success hashes
+  - Task 7: Checks if latest submission lacks the failure message
+- **Time Tracking:**
+  - Latest uncompleted task: `now - previous_task_completion` (tracks ongoing work, even with 0 submissions)
+  - Passed tasks: `task_completion - previous_task_completion`
+  - First task: `last_submission - first_submission`
 
