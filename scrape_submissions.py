@@ -56,7 +56,7 @@ def check_task_passed(task_name, submissions):
         # Task 7 uses the old method (check for failure message)
         fail_text = "It didn't work."
         latest_sub = max(submissions, key=lambda s: datetime.fromisoformat(s['at'].replace('Z', '+00:00')))
-        return 'message' in latest_sub and fail_text not in latest_sub.get('message', '')
+        return 'response' in latest_sub and fail_text not in latest_sub.get('response', '')
 
     # For tasks 0-6, check if any submission has the success message hash
     if task_name not in SUCCESS_HASHES:
@@ -64,8 +64,8 @@ def check_task_passed(task_name, submissions):
 
     success_hash = SUCCESS_HASHES[task_name]
     for sub in submissions:
-        if 'message' in sub and sub['message']:
-            msg_hash = hashlib.sha256(sub['message'].encode()).hexdigest()
+        if 'response' in sub and sub['response']:
+            msg_hash = hashlib.sha256(sub['response'].encode()).hexdigest()
             if msg_hash == success_hash:
                 return True
 
