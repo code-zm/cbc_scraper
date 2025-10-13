@@ -35,8 +35,7 @@ console = Console()
 DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
 
-# Success message hashes for tasks 0-6
-# Generated from submission_success.txt - these are SHA256 hashes
+# Success message hashes for tasks 0-6 (SHA 256)
 SUCCESS_HASHES = {
     'task0': '4210a265099e340d98e4b3d04e883245cde32999133c83f3af2931dcc5c440c3',
     'task1': '7e08cced5248f6d7f49d15ab6d410c1acf0aac1a04d5c1345e558b0ed0e86c42',
