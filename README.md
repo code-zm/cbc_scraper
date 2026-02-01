@@ -1,6 +1,6 @@
-# NSA Codebreaker Challenge Scraper
+# Codebreaker Challenge Scraper
 
-Scripts to scrape and analyze NSA Codebreaker Challenge leaderboards and personal submissions.
+Scripts to scrape and analyze Codebreaker Challenge leaderboards and personal submissions.
 
 ## Installation
 
